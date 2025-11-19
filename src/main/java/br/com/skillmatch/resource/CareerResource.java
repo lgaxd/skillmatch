@@ -29,8 +29,8 @@ public class CareerResource {
     @GET
     @Path("carreiras/{id}/skills")
     public Response listarSkillsDaCarreira(@PathParam("id") Long idCarreira) {
-        // Retorna a lista de CarreiraSkill (que contem a skill e a ordem)
-        return Response.ok(CarreiraSkill.list("carreira.id ORDER BY ordem", idCarreira)).build();
+        // CORREÇÃO AQUI: Adicionado "= ?1" para criar uma condição válida
+        return Response.ok(CarreiraSkill.list("carreira.id = ?1 ORDER BY ordem", idCarreira)).build();
     }
 
     // --- SKILLS ---

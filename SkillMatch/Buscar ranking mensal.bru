@@ -1,0 +1,15 @@
+meta {
+  name: Buscar ranking mensal
+  type: http
+  seq: 9
+}
+
+get {
+  url: http://localhost:8080/ranking/:mes
+  body: none
+  auth: none
+}
+
+params:path {
+  mes: 2024-01
+}

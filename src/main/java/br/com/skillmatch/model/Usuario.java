@@ -18,9 +18,6 @@ public class Usuario extends PanacheEntityBase {
     @Column(name = "data_nascimento")
     public LocalDate dataNascimento;
 
-    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL)
-    public LoginUsuario login;
-
     // Helper para dashboard
     public static Usuario findByEmail(String email) {
         LoginUsuario login = LoginUsuario.find("email", email).firstResult();

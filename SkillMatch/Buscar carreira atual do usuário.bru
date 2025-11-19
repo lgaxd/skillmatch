@@ -1,0 +1,15 @@
+meta {
+  name: Buscar carreira atual do usuário
+  type: http
+  seq: 5
+}
+
+get {
+  url: http://localhost:8080/usuarios/:id/carreira-atual
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 3
+}
