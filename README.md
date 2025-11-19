@@ -1,78 +1,83 @@
-# skillmatch
+# SkillMatch API 🚀
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+API RESTful desenvolvida em Java com Quarkus para a plataforma SkillMatch. O sistema foca em requalificação profissional, gerenciando trilhas de aprendizado, progresso de cursos e gamificação para engajar usuários em transição de carreira.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+## 📋 Sumário
 
-## Running the application in dev mode
+- [Sobre o Projeto](#-sobre-o-projeto)
+- [Funcionalidades](#-funcionalidades)
+- [Tecnologias](#-tecnologias)
+- [Endpoints da API](#-endpoints-da-api)
+- [Autores](#-autores)
 
-You can run your application in dev mode that enables live coding using:
+## 💡 Sobre o Projeto
 
-```shell script
-./mvnw quarkus:dev
-```
+O SkillMatch é uma solução para apoiar pessoas em processo de requalificação e recolocação profissional. Através de uma jornada estruturada, o usuário recebe recomendações de carreiras compatíveis, segue uma trilha de skills e cursos, e é recompensado através de um sistema de gamificação com XP e Ranking.
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+Esta API serve como o núcleo do backend, gerenciando dados de usuários, progressão e regras de negócio, conectando-se a um banco de dados Oracle.
 
-## Packaging and running the application
+## ✨ Funcionalidades
 
-The application can be packaged using:
+- **Autenticação & Usuários**: Registro, login e gestão de perfil.
+- **Jornada de Carreira**: Seleção de carreira e acompanhamento de trilhas de aprendizado.
+- **Gestão de Cursos**: Iniciar cursos, atualizar progresso e marcar conclusão.
+- **Gamificação**:
+  - Sistema de XP por curso concluído.
+  - Ranking mensal de usuários.
+  - Dashboard consolidado com estatísticas.
+- **Integração de Dados**: Persistência robusta de relacionamentos entre Carreiras, Skills e Cursos.
 
-```shell script
-./mvnw package
-```
+## 🛠 Tecnologias
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+- **Java 17**: Linguagem base.
+- **Quarkus 3.x**: Framework Java Supersônico e Subatômico.
+- **Hibernate ORM com Panache**: Implementação do padrão Active Record para persistência simplificada.
+- **Oracle Database**: Banco de dados relacional.
+- **Maven**: Gerenciamento de dependências e build.
+- **Docker (Opcional)**: Para containerização da aplicação.
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+## 📡 Endpoints da API
 
-If you want to build an _über-jar_, execute the following command:
+### 🔐 Autenticação
 
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
-```
+- `POST /auth/login` - Autenticar usuário (Retorna dados do usuário)
+- `POST /auth/register` - Registrar novo usuário
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+### 👤 Usuários & Dashboard
 
-## Creating a native executable
+- `GET /usuarios/{id}` - Buscar dados do perfil
+- `PUT /usuarios/{id}` - Atualizar perfil
+- `GET /usuarios/{id}/dashboard` - Retorna XP, progresso atual e resumos para a home
+- `GET /usuarios/{id}/estatisticas` - Estatísticas de aprendizado
 
-You can create a native executable using:
+### 🚀 Carreiras & Skills
 
-```shell script
-./mvnw package -Dnative
-```
+- `GET /carreiras` - Listar todas as carreiras
+- `GET /carreiras/{id}` - Detalhes de uma carreira
+- `GET /carreiras/{id}/skills` - Listar a trilha de skills da carreira
+- `POST /usuarios/{id}/carreira` - Selecionar/Matricular usuário em uma carreira
+- `GET /usuarios/{id}/carreira-atual` - Buscar a carreira ativa do usuário
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+### 📚 Cursos & Progresso
 
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
+- `GET /skills/{id}/cursos` - Listar cursos de uma skill específica
+- `GET /usuarios/{id}/cursos` - Listar cursos matriculados do usuário
+- `POST /cursos/{id}/iniciar` - Iniciar um curso (Status: "Em andamento")
+- `PUT /cursos/{id}/progresso` - Atualizar % de progresso
+- `PUT /cursos/{id}/concluir` - Finalizar curso (Gera XP)
 
-You can then execute your native executable with: `./target/skillmatch-1.0.0-SNAPSHOT-runner`
+### 🏆 Ranking & XP
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+- `GET /ranking/{mes}` - Buscar ranking mensal (ex: 2024-01)
+- `GET /usuarios/{id}/ranking` - Posição individual do usuário
+- `POST /usuarios/{id}/xp` - Adicionar XP manualmente (bônus)
 
-## Related Guides
+## 👥 Autores
 
-- REST ([guide](https://quarkus.io/guides/rest)): A Jakarta REST implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.
-- REST Jackson ([guide](https://quarkus.io/guides/rest#json-serialisation)): Jackson serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it
-- Hibernate ORM with Panache ([guide](https://quarkus.io/guides/hibernate-orm-panache)): Simplify your persistence code for Hibernate ORM via the active record or the repository pattern
-- JDBC Driver - Oracle ([guide](https://quarkus.io/guides/datasource)): Connect to the Oracle database via JDBC
+| Nome | RM |
+|------|-----|
+| Lucas Grillo Alcântara | RM 561413 |
+| Augusto Buguas Rodrigues | RM 563858 |
+| Pietro Abrahamian | RM 561469 |
 
-## Provided Code
-
-### Hibernate ORM
-
-Create your first JPA entity
-
-[Related guide section...](https://quarkus.io/guides/hibernate-orm)
-
-[Related Hibernate with Panache section...](https://quarkus.io/guides/hibernate-orm-panache)
-
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+Feito com ❤️ pela Equipe SkillMatch para um futuro profissional mais acessível.
