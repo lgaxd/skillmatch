@@ -1,0 +1,18 @@
+meta {
+  name: Autenticar usuário
+  type: http
+  seq: 15
+}
+
+post {
+  url: http://localhost:8080/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "michael.pibble@gmail.com",
+    "senha": "senha123"
+  }
+}

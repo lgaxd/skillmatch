@@ -10,7 +10,6 @@ import java.util.Map;
 
 @Path("/usuarios")
 @Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class UserResource {
 
     @GET
@@ -23,6 +22,7 @@ public class UserResource {
     @PUT
     @Path("/{id}")
     @Transactional
+    @Consumes(MediaType.APPLICATION_JSON)
     public Response updateUsuario(@PathParam("id") Long id, Usuario dados) {
         Usuario u = Usuario.findById(id);
         if (u == null)
@@ -46,6 +46,7 @@ public class UserResource {
     @POST
     @Path("/{id}/carreira")
     @Transactional
+    @Consumes(MediaType.APPLICATION_JSON)
     public Response selecionarCarreira(@PathParam("id") Long userId, Carreira carreira) {
         Usuario usuario = Usuario.findById(userId);
         Carreira c = Carreira.findById(carreira.id);
@@ -81,6 +82,7 @@ public class UserResource {
     @POST
     @Path("/{id}/xp")
     @Transactional
+    @Consumes(MediaType.APPLICATION_JSON)
     public Response adicionarXp(@PathParam("id") Long id, XpDTO xpDto) {
         // Adiciona XP na carreira atual
         UsuarioCarreira uc = UsuarioCarreira.find("usuario.id", id).firstResult();

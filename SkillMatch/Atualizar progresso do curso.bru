@@ -1,0 +1,25 @@
+meta {
+  name: Atualizar progresso do curso
+  type: http
+  seq: 20
+}
+
+put {
+  url: http://localhost:8080/cursos/:id/progresso?idUsuario=1
+  body: json
+  auth: none
+}
+
+params:query {
+  idUsuario: 1
+}
+
+params:path {
+  id: 2
+}
+
+body:json {
+  {
+    "percentual": 50.5
+  }
+}

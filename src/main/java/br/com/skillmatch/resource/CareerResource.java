@@ -9,7 +9,6 @@ import jakarta.ws.rs.core.Response;
 
 @Path("/")
 @Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class CareerResource {
 
     // --- CARREIRAS ---
@@ -76,14 +75,17 @@ public class CareerResource {
     @PUT
     @Path("cursos/{id}/progresso")
     @Transactional
+    @Consumes(MediaType.APPLICATION_JSON) // ADICIONADO AQUI: Este método TEM corpo JSON
     public Response atualizarProgressoCurso(@PathParam("id") Long idCurso, @QueryParam("idUsuario") Long idUsuario, ProgressoDTO progresso) {
         UsuarioCurso uc = UsuarioCurso.find("curso.id = ?1 AND usuario.id = ?2", idCurso, idUsuario).firstResult();
         if (uc == null) return Response.status(404).build();
+        Double novoProgresso = progresso.getPercentual();
+        uc.progresso = novoProgresso;
         
-        uc.progresso = progresso.getPercentual();
-        if (uc.progresso >= 100.0) {
+        if (uc.progresso != null && uc.progresso >= 100.0) { // Verifica se não é nulo antes de comparar
             uc.status = "Concluído";
         }
+
         return Response.ok(uc).build();
     }
 
