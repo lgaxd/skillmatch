@@ -1,0 +1,15 @@
+meta {
+  name: Dados consolidados para dashboard
+  type: http
+  seq: 10
+}
+
+get {
+  url: http://localhost:8080/usuarios/:id/dashboard
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 2
+}

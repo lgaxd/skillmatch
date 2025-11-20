@@ -1,0 +1,19 @@
+meta {
+  name: Marcar curso como concluído
+  type: http
+  seq: 19
+}
+
+put {
+  url: http://localhost:8080/cursos/:id/concluir?idUsuario=3
+  body: none
+  auth: none
+}
+
+params:query {
+  idUsuario: 3
+}
+
+params:path {
+  id: 2
+}

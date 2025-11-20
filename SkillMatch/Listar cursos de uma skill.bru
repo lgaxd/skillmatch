@@ -1,0 +1,15 @@
+meta {
+  name: Listar cursos de uma skill
+  type: http
+  seq: 6
+}
+
+get {
+  url: http://localhost:8080/skills/:id/cursos
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 3
+}

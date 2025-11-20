@@ -1,0 +1,15 @@
+meta {
+  name: Buscar dados do usuário
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:8080/usuarios/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 2
+}

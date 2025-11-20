@@ -1,0 +1,15 @@
+meta {
+  name: Estatísticas de aprendizado
+  type: http
+  seq: 11
+}
+
+get {
+  url: http://localhost:8080/usuarios/:id/estatisticas
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Atualizar perfil do usuário
+  type: http
+  seq: 17
+}
+
+put {
+  url: http://localhost:8080/usuarios/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 11
+}
+
+body:json {
+  {
+    "nome": "Michael Pibble",
+    "dataNascimento": "1997-08-21"
+  }
+}

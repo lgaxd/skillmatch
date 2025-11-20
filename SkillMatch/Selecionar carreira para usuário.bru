@@ -1,0 +1,21 @@
+meta {
+  name: Selecionar carreira para usuário
+  type: http
+  seq: 16
+}
+
+post {
+  url: http://localhost:8080/usuarios/:id/carreira
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 11
+}
+
+body:json {
+  {
+    "id": 1
+  }
+}

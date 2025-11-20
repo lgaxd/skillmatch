@@ -1,0 +1,21 @@
+meta {
+  name: Adicionar XP ao usuário
+  type: http
+  seq: 13
+}
+
+post {
+  url: http://localhost:8080/usuarios/:id/xp
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 2
+}
+
+body:json {
+  {
+    "quantidadeXp": 150
+  }
+}
