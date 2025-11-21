@@ -2,6 +2,7 @@ package br.com.skillmatch.resource;
 
 import br.com.skillmatch.dto.*;
 import br.com.skillmatch.model.*;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -259,52 +260,85 @@ public class UserResource {
                         .build();
             }
 
-            // Buscar ranking do usuário para o mês específico
-            Ranking ranking = Ranking.find(
-                    "usuario.id = ?1 AND mesReferencia = ?2",
-                    usuarioId, mesReferencia).firstResult();
+            // Verificar se é o mês mais recente
+            if (!Ranking.isMesMaisRecente(mesReferencia)) {
+                Ranking ranking = Ranking.find(
+                        "usuario.id = ?1 AND mesReferencia = ?2",
+                        usuarioId, mesReferencia).firstResult();
 
-            if (ranking == null) {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity("Ranking não encontrado para este mês")
-                        .build();
-            }
-
-            // Buscar carreira atual do usuário para obter XP total
-            UsuarioCarreira usuarioCarreira = UsuarioCarreira.find("usuario.id", usuarioId).firstResult();
-            if (usuarioCarreira == null) {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity("Usuário não possui carreira ativa")
-                        .build();
-            }
-
-            Long xpTotal = usuarioCarreira.xp != null ? usuarioCarreira.xp : 0L;
-
-            // Aplicar a lógica de atualização
-            if (Ranking.isMesMaisRecente(mesReferencia)) {
-                // É o mês mais recente: pontuacao = (xpTotal - somatória do XP dos meses
-                // anteriores)
-                Long xpMesesAnteriores = Ranking.getXpMesesAnteriores(usuarioId, mesReferencia);
-                Long novaPontuacao = xpTotal - xpMesesAnteriores;
-
-                // Garantir que a pontuação não seja negativa
-                ranking.pontuacao = Math.max(novaPontuacao, 0L);
-
-                return Response.ok(Map.of(
-                        "mensagem", "Ranking atualizado com sucesso",
-                        "mesReferencia", mesReferencia,
-                        "xpTotal", xpTotal,
-                        "xpMesesAnteriores", xpMesesAnteriores,
-                        "novaPontuacao", ranking.pontuacao,
-                        "atualizado", true)).build();
-            } else {
-                // Não é o mês mais recente: pontuação fica fixa (não atualiza)
                 return Response.ok(Map.of(
                         "mensagem", "Ranking não atualizado - não é o mês mais recente",
                         "mesReferencia", mesReferencia,
-                        "pontuacaoAtual", ranking.pontuacao,
+                        "pontuacaoAtual", ranking != null ? ranking.pontuacao : 0,
+                        "posicaoAtual", ranking != null ? ranking.posicao : 0,
                         "atualizado", false)).build();
             }
+
+            EntityManager em = Ranking.getEntityManager();
+
+            // FASE 1: Atualizar pontuação do usuário específico CORRIGIDA
+            String updatePontuacao = """
+                    UPDATE TB_RANKING
+                    SET pontuacao_total = GREATEST(
+                        (SELECT NVL(xp_total, 0) FROM (
+                            SELECT xp_total FROM TB_USUARIO_CARREIRA
+                            WHERE id_usuario = ?1
+                            ORDER BY id_usuario_carreira DESC
+                        ) WHERE ROWNUM = 1) -
+                        (SELECT NVL(SUM(pontuacao_total), 0) FROM TB_RANKING
+                         WHERE id_usuario = ?1 AND mes_referencia < ?2),
+                        0
+                    )
+                    WHERE id_usuario = ?1 AND mes_referencia = ?2
+                    """;
+
+            int pontuacaoAtualizada = em.createNativeQuery(updatePontuacao)
+                    .setParameter(1, usuarioId)
+                    .setParameter(2, mesReferencia)
+                    .executeUpdate();
+
+            if (pontuacaoAtualizada == 0) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("Ranking não encontrado para este usuário e mês")
+                        .build();
+            }
+
+            // FASE 2: Reordenar todas as posições do mês
+            String updatePosicoes = """
+                    MERGE INTO TB_RANKING target
+                    USING (
+                        SELECT
+                            id_ranking,
+                            ROW_NUMBER() OVER (ORDER BY pontuacao_total DESC) as nova_posicao
+                        FROM TB_RANKING
+                        WHERE mes_referencia = ?1
+                    ) source
+                    ON (target.id_ranking = source.id_ranking)
+                    WHEN MATCHED THEN UPDATE SET
+                        target.posicao = source.nova_posicao
+                    """;
+
+            int posicoesAtualizadas = em.createNativeQuery(updatePosicoes)
+                    .setParameter(1, mesReferencia)
+                    .executeUpdate();
+
+            // Buscar dados atualizados
+            Ranking rankingAtualizado = Ranking.find(
+                    "usuario.id = ?1 AND mesReferencia = ?2",
+                    usuarioId, mesReferencia).firstResult();
+
+            em.flush();
+
+            return Response.ok(Map.of(
+                    "mensagem", "Ranking atualizado e posições reordenadas com sucesso",
+                    "mesReferencia", mesReferencia,
+                    "usuarioId", usuarioId,
+                    "usuarioNome", usuario.nome,
+                    "novaPontuacao", rankingAtualizado.pontuacao,
+                    "posicaoAtual", rankingAtualizado.posicao,
+                    "pontuacaoAtualizada", pontuacaoAtualizada,
+                    "posicoesReordenadas", posicoesAtualizadas,
+                    "atualizado", true)).build();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -323,36 +357,60 @@ public class UserResource {
             YearMonth mesAtual = YearMonth.now();
             String mesReferencia = mesAtual.format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
-            // Buscar todos os rankings do mês atual
-            List<Ranking> rankings = Ranking.list("mesReferencia = ?1", mesReferencia);
+            // FASE 1: Atualizar pontuações usando consulta nativa CORRIGIDA
+            EntityManager em = Ranking.getEntityManager();
 
-            int atualizados = 0;
-            int mantidos = 0;
+            String updatePontuacoes = """
+                    UPDATE TB_RANKING r
+                    SET pontuacao_total = (
+                        SELECT GREATEST(NVL((
+                            SELECT uc.xp_total
+                            FROM TB_USUARIO_CARREIRA uc
+                            WHERE uc.id_usuario = r.id_usuario
+                            AND ROWNUM = 1
+                        ), 0) - NVL((
+                            SELECT SUM(r2.pontuacao_total)
+                            FROM TB_RANKING r2
+                            WHERE r2.id_usuario = r.id_usuario
+                            AND r2.mes_referencia < r.mes_referencia
+                        ), 0), 0)
+                        FROM DUAL
+                    )
+                    WHERE mes_referencia = ?1
+                    """;
 
-            for (Ranking ranking : rankings) {
-                UsuarioCarreira usuarioCarreira = UsuarioCarreira.find("usuario.id", ranking.usuario.id).firstResult();
+            int pontuacoesAtualizadas = em.createNativeQuery(updatePontuacoes)
+                    .setParameter(1, mesReferencia)
+                    .executeUpdate();
 
-                if (usuarioCarreira != null) {
-                    Long xpTotal = usuarioCarreira.xp != null ? usuarioCarreira.xp : 0L;
-                    Long xpMesesAnteriores = Ranking.getXpMesesAnteriores(ranking.usuario.id, mesReferencia);
-                    Long novaPontuacao = Math.max(xpTotal - xpMesesAnteriores, 0L);
+            // FASE 2: Reordenar posições usando consulta nativa com ROW_NUMBER()
+            String updatePosicoes = """
+                    MERGE INTO TB_RANKING target
+                    USING (
+                        SELECT
+                            id_ranking,
+                            ROW_NUMBER() OVER (ORDER BY pontuacao_total DESC) as nova_posicao
+                        FROM TB_RANKING
+                        WHERE mes_referencia = ?1
+                    ) source
+                    ON (target.id_ranking = source.id_ranking)
+                    WHEN MATCHED THEN UPDATE SET
+                        target.posicao = source.nova_posicao
+                    """;
 
-                    // Só atualiza se a pontuação mudou
-                    if (!novaPontuacao.equals(ranking.pontuacao)) {
-                        ranking.pontuacao = novaPontuacao;
-                        atualizados++;
-                    } else {
-                        mantidos++;
-                    }
-                }
-            }
+            int posicoesAtualizadas = em.createNativeQuery(updatePosicoes)
+                    .setParameter(1, mesReferencia)
+                    .executeUpdate();
+
+            // Forçar o flush
+            em.flush();
 
             return Response.ok(Map.of(
-                    "mensagem", "Atualização em lote concluída",
+                    "mensagem", "Atualização em lote concluída com consultas nativas",
                     "mesReferencia", mesReferencia,
-                    "rankingsAtualizados", atualizados,
-                    "rankingsMantidos", mantidos,
-                    "totalProcessados", rankings.size())).build();
+                    "pontuacoesAtualizadas", pontuacoesAtualizadas,
+                    "posicoesReordenadas", posicoesAtualizadas))
+                    .build();
 
         } catch (Exception e) {
             e.printStackTrace();
