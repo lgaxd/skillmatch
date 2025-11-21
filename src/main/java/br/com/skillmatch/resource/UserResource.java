@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
+import jakarta.persistence.Query;
 
 @Path("/usuarios")
 @Produces(MediaType.APPLICATION_JSON)
@@ -51,24 +52,66 @@ public class UserResource {
 
     @POST
     @Path("/{id}/carreira")
-    @Transactional
     @Consumes(MediaType.APPLICATION_JSON)
     public Response selecionarCarreira(@PathParam("id") Long userId, Carreira carreira) {
-        Usuario usuario = Usuario.findById(userId);
-        Carreira c = Carreira.findById(carreira.id);
+        try {
+            Usuario usuario = Usuario.findById(userId);
+            Carreira c = Carreira.findById(carreira.id);
 
-        if (usuario == null || c == null)
-            return Response.status(404).build();
+            if (usuario == null || c == null)
+                return Response.status(404).entity("Usuário ou carreira não encontrado").build();
 
-        UsuarioCarreira uc = new UsuarioCarreira();
-        uc.usuario = usuario;
-        uc.carreira = c;
-        uc.idStatusJornada = 2L; // 2 = Em Andamento (conforme SQL)
-        uc.progresso = 0.0;
-        uc.xp = 0L;
-        uc.persist();
+            // Executa em uma transação separada para garantir o commit do DELETE
+            boolean sucesso = executarTrocaDeCarreira(userId, c.id);
 
-        return Response.status(201).entity(uc).build();
+            if (sucesso) {
+                UsuarioCarreira resultado = UsuarioCarreira.find("usuario.id = ?1", userId).firstResult();
+                return Response.ok(resultado).build();
+            } else {
+                return Response.status(500).entity("Erro ao trocar de carreira").build();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.status(500)
+                    .entity("Erro ao selecionar carreira: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @Transactional
+    protected boolean executarTrocaDeCarreira(Long userId, Long carreiraId) {
+        try {
+            EntityManager em = UsuarioCarreira.getEntityManager();
+
+            // Primeiro: DELETE com verificação
+            Query deleteQuery = em.createNativeQuery(
+                    "DELETE FROM TB_USUARIO_CARREIRA WHERE id_usuario = ?1");
+            deleteQuery.setParameter(1, userId);
+            deleteQuery.executeUpdate(); // Remove a variável 'deleted'
+
+            // Força o flush do DELETE
+            em.flush();
+
+            // Segundo: INSERT
+            Query insertQuery = em.createNativeQuery(
+                    "INSERT INTO TB_USUARIO_CARREIRA (id_usuario, id_carreira, id_status_jornada, progresso_percentual, xp_total) "
+                            +
+                            "VALUES (?1, ?2, ?3, ?4, ?5)");
+            insertQuery.setParameter(1, userId);
+            insertQuery.setParameter(2, carreiraId);
+            insertQuery.setParameter(3, 2L);
+            insertQuery.setParameter(4, 0.0);
+            insertQuery.setParameter(5, 0L);
+
+            int inserted = insertQuery.executeUpdate();
+
+            return inserted > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     @PUT
