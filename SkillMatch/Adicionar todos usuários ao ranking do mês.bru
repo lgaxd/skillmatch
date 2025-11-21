@@ -1,0 +1,17 @@
+meta {
+  name: Adicionar todos usuários ao ranking do mês
+  type: http
+  seq: 25
+}
+
+post {
+  url: http://localhost:8080/usuarios/ranking/adicionar-todos
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "mesReferencia": "2025-11"
+  }
+}
