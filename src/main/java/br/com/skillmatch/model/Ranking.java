@@ -6,7 +6,9 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "TB_RANKING")
 public class Ranking extends PanacheEntityBase {
+    
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_ranking")
     public Long id;
 
@@ -22,4 +24,9 @@ public class Ranking extends PanacheEntityBase {
 
     @Column(name = "mes_referencia")
     public String mesReferencia;
+
+    // Método para persistir
+    public static void persist(Ranking ranking) {
+        PanacheEntityBase.persist(ranking);
+    }
 }

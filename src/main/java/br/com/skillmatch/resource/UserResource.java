@@ -65,6 +65,19 @@ public class UserResource {
         return Response.status(201).entity(uc).build();
     }
 
+    @PUT
+    @Path("/{id}/carreira/atualizar-progresso")
+    @Transactional
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response atualizarProgressoCarreira(@PathParam("id") Long userId, ProgressoDTO progressoDto) {
+        UsuarioCarreira uc = UsuarioCarreira.find("usuario.id = ?1", userId).firstResult();
+        if (uc == null)
+            return Response.status(404).entity("Usuário sem carreira ativa").build();
+
+        uc.progresso = progressoDto.getPercentual();
+        return Response.ok(uc).build();
+    }
+
     @GET
     @Path("/{id}/cursos")
     public Response getCursosUsuario(@PathParam("id") Long id) {
@@ -77,6 +90,57 @@ public class UserResource {
         // Exemplo buscando o ranking mais recente (simplificado)
         Ranking r = Ranking.find("usuario.id = ?1 ORDER BY mesReferencia DESC", id).firstResult();
         return r != null ? Response.ok(r).build() : Response.status(404).build();
+    }
+
+    @POST
+    @Path("/{id}/ranking")
+    @Transactional
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response adicionarAoRanking(@PathParam("id") Long id, RankingDTO rankingDto) {
+        try {
+            Usuario u = Usuario.findById(id);
+            if (u == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("Usuário não encontrado")
+                        .build();
+            }
+
+            // Verificar se o usuário já está no ranking para este mês - USANDO COUNT
+            Long countExistente = Ranking.count(
+                    "usuario.id = ?1 and mesReferencia = ?2",
+                    id,
+                    rankingDto.getMesReferencia());
+
+            if (countExistente > 0) {
+                return Response.status(Response.Status.CONFLICT)
+                        .entity("Usuário já está no ranking para este mês")
+                        .build();
+            }
+
+            // Buscar total de rankings do mês usando COUNT (mais eficiente)
+            Long totalRankings = Ranking.count("mesReferencia = ?1", rankingDto.getMesReferencia());
+            int novaPosicao = totalRankings.intValue() + 1;
+
+            // Criar novo ranking
+            Ranking novoRanking = new Ranking();
+            novoRanking.usuario = u;
+            novoRanking.mesReferencia = rankingDto.getMesReferencia();
+            novoRanking.posicao = novaPosicao;
+            novoRanking.pontuacao = 0L;
+
+            // Persistir usando o método estático
+            Ranking.persist(novoRanking);
+
+            return Response.status(Response.Status.CREATED)
+                    .entity(novoRanking)
+                    .build();
+
+        } catch (Exception e) {
+            e.printStackTrace(); // Para debug
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Erro ao adicionar usuário ao ranking: " + e.getMessage())
+                    .build();
+        }
     }
 
     @POST
