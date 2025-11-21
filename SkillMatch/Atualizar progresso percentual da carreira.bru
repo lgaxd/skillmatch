@@ -1,0 +1,21 @@
+meta {
+  name: Atualizar progresso percentual da carreira
+  type: http
+  seq: 21
+}
+
+put {
+  url: http://localhost:8080/usuarios/:id/carreira/atualizar-progresso
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "percentual": 60.0
+  }
+}

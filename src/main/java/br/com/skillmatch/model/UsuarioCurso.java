@@ -22,6 +22,6 @@ public class UsuarioCurso extends PanacheEntityBase {
     @Column(name = "status_curso")
     public String status; // 'Pendente', 'Em andamento', 'Concluído'
 
-    @Column(name = "progresso_percentual")
+    @Column(name = "progresso_percentual", columnDefinition = "NUMBER")
     public Double progresso;
 }

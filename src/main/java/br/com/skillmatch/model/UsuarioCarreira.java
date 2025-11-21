@@ -23,7 +23,7 @@ public class UsuarioCarreira extends PanacheEntityBase {
     @Column(name = "id_status_jornada")
     public Long idStatusJornada;
 
-    @Column(name = "progresso_percentual")
+    @Column(name = "progresso_percentual", columnDefinition = "NUMBER")
     public Double progresso;
 
     @Column(name = "xp_total")

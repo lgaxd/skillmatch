@@ -1,0 +1,21 @@
+meta {
+  name: Adicionar usuário ao ranking
+  type: http
+  seq: 22
+}
+
+post {
+  url: http://localhost:8080/usuarios/:id/ranking
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 2
+}
+
+body:json {
+  {
+    "mesReferencia": "2025-11"
+  }
+}

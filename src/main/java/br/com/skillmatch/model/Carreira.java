@@ -17,6 +17,6 @@ public class Carreira extends PanacheEntityBase {
     @Column(name = "descricao_carreira")
     public String descricao;
 
-    @Column(name = "demanda_mercado")
+    @Column(name = "demanda_mercado", columnDefinition = "NUMBER")
     public Double demanda;
 }
