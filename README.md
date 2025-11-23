@@ -16,6 +16,8 @@ O SkillMatch é uma solução para apoiar pessoas em processo de requalificaçã
 
 Esta API serve como o núcleo do backend, gerenciando dados de usuários, progressão e regras de negócio, conectando-se a um banco de dados Oracle.
 
+Demonstração: https://www.youtube.com/watch?v=moQ8BnQwgik
+
 ## ✨ Funcionalidades
 
 - **Autenticação & Usuários**: Registro, login e gestão de perfil.
